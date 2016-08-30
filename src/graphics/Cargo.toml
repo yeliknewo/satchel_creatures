@@ -1,0 +1,16 @@
+[package]
+name = "graphics"
+version = "0.1.0"
+authors = ["Kiley Owen <yelikdev@gmail.com>"]
+
+[dependencies]
+gfx = "*"
+gfx_device_gl = "*"
+glutin = "*"
+gfx_window_glutin = "*"
+image = "*"
+find_folder = "*"
+log = "*"
+env_logger = "*"
+
+utils = { path="../utils" }

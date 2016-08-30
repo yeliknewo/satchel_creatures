@@ -1,0 +1,15 @@
+[package]
+name = "satchel_creatures"
+version = "0.1.0"
+authors = ["Kiley Owen <yelikdev@gmail.com>"]
+
+[dependencies]
+nalgebra = "*"
+log = "*"
+env_logger = "*"
+
+core = { path="src/core" }
+art = { path="src/art" }
+components = { path="src/components" }
+math = { path="src/math" }
+utils = { path="src/utils" }

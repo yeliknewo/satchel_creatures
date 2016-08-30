@@ -1,0 +1,17 @@
+[package]
+name = "components"
+version = "0.1.0"
+authors = ["Kiley Owen <yelikdev@gmail.com>"]
+
+[dependencies]
+gfx = "*"
+gfx_device_gl = "*"
+specs = "*"
+nalgebra = "*"
+log = "*"
+env_logger = "*"
+
+graphics = { path="../graphics" }
+utils = { path="../utils" }
+math = { path="../math" }
+art = { path="../art" }

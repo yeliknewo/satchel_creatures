@@ -1,0 +1,23 @@
+[package]
+name = "core"
+version = "0.1.0"
+authors = ["Kiley Owen <yelikdev@gmail.com>"]
+
+[dependencies]
+gfx = "*"
+gfx_device_gl = "*"
+glutin = "*"
+gfx_window_glutin = "*"
+specs = "*"
+nalgebra = "*"
+time = "*"
+find_folder = "*"
+log = "*"
+env_logger = "*"
+
+art = { path="../art" }
+systems = { path="../systems" }
+utils = { path="../utils" }
+components = { path="../components" }
+graphics = { path="../graphics" }
+math = { path="../math" }
