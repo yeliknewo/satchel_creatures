@@ -12,10 +12,11 @@ use time::{precise_time_ns};
 
 //*************************************************************************************************
 
-use comps::{Tile, RenderId, Transform, Camera, RenderData, Clickable};
-use comps::non_components::{Map};
+use comps::{Tile, RenderId, Transform, Camera, RenderData, Clickable, Moving, OverworldPlayer};
+use comps::non_components::{Map, Link};
+use comps::moving::Dir;
 
-use sys::{Render, Control, Mapper, LinkConnector, mapper};
+use sys::{Render, Control, Mapper, LinkConnector, OverworldControl, Mover, CameraMover, mapper};
 
 use graphics::{load_texture};
 
@@ -71,16 +72,15 @@ impl Game {
             w.register::<RenderData>();
             w.register::<Clickable>();
             w.register::<Tile>();
+            w.register::<Moving>();
+            w.register::<OverworldPlayer>();
 
             w.add_resource(Map::new());
 
             Planner::<Delta>::new(w, 8)
         };
 
-        let mut renderer = Render::new(match game_event_hub.render_channel.take() {
-            Some(channel) => channel,
-            None => panic!("game event hub render channel was none"),
-        });
+        let mut renderer = Render::new(game_event_hub.render_channel.take().expect("Game event hub render channel was none"));
 
         //make the camera
         planner.mut_world().create_now()
@@ -147,6 +147,26 @@ impl Game {
                             tiles::PATH_RIGHT
                         } else if x == -5 {
                             tiles::PATH_LEFT
+                        } else if y == -9 {
+                            if x == -4 {
+                                tiles::PATH_IN_UP_RIGHT
+                            } else if x == 4 {
+                                tiles::PATH_IN_UP_LEFT
+                            } else {
+                                tiles::PATH_UP
+                            }
+                        } else if y == 9 {
+                            if x == -4 {
+                                tiles::PATH_IN_DOWN_RIGHT
+                            } else if x == 4 {
+                                tiles::PATH_IN_DOWN_LEFT
+                            } else {
+                                tiles::PATH_DOWN
+                            }
+                        } else if x == -4 {
+                            tiles::PATH_RIGHT
+                        } else if x == 4 {
+                            tiles::PATH_LEFT
                         } else {
                             tiles::EMPTY
                         }
@@ -162,13 +182,12 @@ impl Game {
                         ),
                         nalgebra::Vector3::new(1.0, 1.0, 1.0)
                     ))
-                    .with(RenderData::new(layers::TILES, tiles::DEFAULT_TINT, tile_rect, tiles::SIZE))
+                    .with(RenderData::new(layers::TILES, *tiles::DEFAULT_TINT, tile_rect, tiles::SIZE))
                     .with(Tile::new(vec!()))
                     .build();
                 game_event_hub.mapper_channel_game.as_mut().unwrap().0.send(mapper::RecvEvent::NewMapping(location, entity)).unwrap();
             }
         }
-
 
         //player render with spritesheet id
         let player_render = {
@@ -195,16 +214,22 @@ impl Game {
                 ),
                 nalgebra::Vector3::new(1.0, 1.0, 1.0)
             ))
-            .with(RenderData::new(layers::PLAYER, player::DEFAULT_TINT, player::STAND_DOWN, player::SIZE))
+            .with(RenderData::new(layers::PLAYER, *player::DEFAULT_TINT, player::STAND_DOWN, player::SIZE))
+            .with(Moving::new(Dir::Stay, Link::new(Point2I::new(0, 0)))
+                .with_map_rect(Dir::Stay, player::STAND_DOWN)
+                .with_map_rect(Dir::Left, player::STAND_SIDE)
+                .with_map_rect(Dir::Right, player::STAND_SIDE)
+                .with_map_rect(Dir::Up, player::STAND_UP)
+                .with_map_rect(Dir::Down, player::STAND_DOWN)
+            )
+            .with(OverworldPlayer::new())
             .build();
 
         //add control system for human IO
         planner.add_system(
             Control::new(
-                match game_event_hub.control_channel.take() {
-                    Some(channel) => channel,
-                    None => panic!("game event hub control channel was none"),
-                },
+                game_event_hub.control_channel.take().expect("game event hub control channel was none"),
+                game_event_hub.overworld_control_channel_control.take().expect("game event hub overworld control channel control was none"),
                 Point2::new(10.0, 10.0),
                 mouse_location,
                 screen_resolution,
@@ -228,6 +253,25 @@ impl Game {
             LinkConnector::new(),
             "link connector",
             20
+        );
+
+        planner.add_system(
+            OverworldControl::new(game_event_hub.overworld_control_channel_overworld.take().expect("Game Event hub overworld control channel overworld was none")),
+            "overworld control",
+            15
+        );
+
+
+        planner.add_system(
+            Mover::new(),
+            "mover",
+            12
+        );
+
+        planner.add_system(
+            CameraMover::new(),
+            "camera mover",
+            11
         );
 
         //add system that renders everything

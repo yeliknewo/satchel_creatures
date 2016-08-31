@@ -29,12 +29,12 @@ impl Component {
         }
     }
 
-    pub fn set_position(&mut self, pos: Point2) {
+    pub fn set_pos(&mut self, pos: Point2) {
         self.isometry.translation.x = pos.get_x() as GfxCoord;
         self.isometry.translation.y = pos.get_y() as GfxCoord;
     }
 
-    pub fn add_position(&mut self, pos_delta: Point2) {
+    pub fn add_pos(&mut self, pos_delta: Point2) {
         self.isometry.translation.x += pos_delta.get_x() as GfxCoord;
         self.isometry.translation.y += pos_delta.get_y() as GfxCoord;
     }

@@ -123,6 +123,12 @@ impl Add<Point2I> for Point2I {
     }
 }
 
+impl Into<Point2> for Point2I {
+    fn into(self) -> Point2 {
+        Point2::new(self.get_x() as Coord, self.get_y() as Coord)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Point2 {
     x: Coord,
@@ -179,6 +185,16 @@ impl Point2 {
 
     pub fn abs(&self) -> Point2 {
         Point2::new(self.get_x().abs(), self.get_y().abs())
+    }
+
+    pub fn distance_to_point2i(&self) -> Coord {
+        let rounded: Point2I = self.clone().into();
+        let unrounded: Point2 = rounded.into();
+        (self.clone() - unrounded).length()
+    }
+
+    pub fn rounded(&self) -> Point2 {
+        Point2::new(self.get_x().round(), self.get_y().round())
     }
 }
 

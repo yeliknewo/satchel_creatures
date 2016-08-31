@@ -9,8 +9,11 @@ use specs::{self, RunArg};
 use math::{OrthographicHelper, Point2};
 
 use comps::{Transform, Camera, Clickable};
+use comps::moving::Dir;
 
-use utils::{Delta, GfxCoord, Coord};
+use super::overworld_control;
+
+use utils::{Delta, Coord, GfxCoord};
 
 //*************************************************************************************************
 
@@ -45,6 +48,7 @@ enum Sign {
 #[derive(Debug)]
 pub struct System {
     channel: Channel,
+    overworld_channel: overworld_control::channel::Control,
     move_h: Sign,
     move_v: Sign,
     move_speed_mult: Point2,
@@ -58,6 +62,7 @@ pub struct System {
 impl System {
     pub fn new(
         channel: Channel,
+        overworld_channel: overworld_control::channel::Control,
         move_speed_mult: Point2,
         mouse_location: Point2,
         screen_resolution: Point2,
@@ -65,6 +70,7 @@ impl System {
     ) -> System {
         System {
             channel: channel,
+            overworld_channel: overworld_channel,
             move_h: Sign::Zero,
             move_v: Sign::Zero,
             move_speed_mult: move_speed_mult,
@@ -134,7 +140,7 @@ impl System {
 }
 
 impl specs::System<Delta> for System {
-    fn run(&mut self, arg: RunArg, delta_time: Delta) {
+    fn run(&mut self, arg: RunArg, _: Delta) {
         use specs::Join;
 
         self.check_input();
@@ -149,34 +155,34 @@ impl specs::System<Delta> for System {
 
         let mut camera_opt = None;
 
-        for mut c in (&mut cameras).iter() {
-            if c.is_main() {
-                match (self.move_h, self.move_v) {
-                    (Sign::Zero, Sign::Zero) => (),
-                    (h, v) => {
-                        let move_h = match h {
-                            Sign::Pos => 1.0,
-                            Sign::Zero => 0.0,
-                            Sign::Neg => -1.0,
-                        };
-                        let move_v = match v {
-                            Sign::Pos => 1.0,
-                            Sign::Zero => 0.0,
-                            Sign::Neg => -1.0,
-                        };
-                        let offset = c.get_offset();
-                        c.set_offset(Point2::new(
-                            move_h * delta_time * self.move_speed_mult.get_x() + offset.get_x(),
-                            move_v * delta_time * self.move_speed_mult.get_y() + offset.get_y()
-                        ));
-                    },
-                }
+        for mut camera in (&mut cameras).iter() {
+            if camera.is_main() {
+                // match (self.move_h, self.move_v) {
+                //     (Sign::Zero, Sign::Zero) => (),
+                //     (h, v) => {
+                //         // let move_h = match h {
+                //         //     Sign::Pos => 1.0,
+                //         //     Sign::Zero => 0.0,
+                //         //     Sign::Neg => -1.0,
+                //         // };
+                //         // let move_v = match v {
+                //         //     Sign::Pos => 1.0,
+                //         //     Sign::Zero => 0.0,
+                //         //     Sign::Neg => -1.0,
+                //         // };
+                //         // let offset = c.get_offset();
+                //         // c.set_offset(Point2::new(
+                //         //     move_h * delta_time * self.move_speed_mult.get_x() + offset.get_x(),
+                //         //     move_v * delta_time * self.move_speed_mult.get_y() + offset.get_y()
+                //         // ));
+                //     },
+                // }
                 for &(width, height) in &self.resize {
                     self.ortho_helper.set_aspect_ratio(width as GfxCoord / height as GfxCoord);
-                    c.set_proj(&self.ortho_helper);
+                    camera.set_proj(&self.ortho_helper);
                     self.screen_resolution = Point2::new(width as Coord, height as Coord);
                 }
-                camera_opt = Some(c);
+                camera_opt = Some(camera);
                 break;
             }
         }
@@ -185,6 +191,15 @@ impl specs::System<Delta> for System {
             Some(c) => c,
             None => panic!("run camera opt was none"),
         };
+
+        match (self.move_h, self.move_v) {
+            (Sign::Pos, Sign::Zero) => self.overworld_channel.0.send(overworld_control::RecvEvent::Move(Dir::Right)).unwrap(),
+            (Sign::Neg, Sign::Zero) => self.overworld_channel.0.send(overworld_control::RecvEvent::Move(Dir::Left)).unwrap(),
+            (Sign::Zero, Sign::Pos) => self.overworld_channel.0.send(overworld_control::RecvEvent::Move(Dir::Up)).unwrap(),
+            (Sign::Zero, Sign::Neg) => self.overworld_channel.0.send(overworld_control::RecvEvent::Move(Dir::Down)).unwrap(),
+            (Sign::Zero, Sign::Zero) |
+            _ => self.overworld_channel.0.send(overworld_control::RecvEvent::Move(Dir::Stay)).unwrap(),
+        }
 
         if let Some(input) = self.mouse_button.pop() {
             match input {

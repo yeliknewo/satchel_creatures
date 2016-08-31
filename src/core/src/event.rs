@@ -1,7 +1,7 @@
 use std::sync::mpsc::{Sender, Receiver, channel, TryRecvError};
 use glutin::Event;
 
-use sys::{control, render, mapper};
+use sys::{control, render, mapper, overworld_control};
 use ::game;
 
 #[derive(Debug)]
@@ -11,6 +11,8 @@ pub struct GameEventHub {
     pub game_channel: Option<game::Channel>,
     pub mapper_channel_mapper: Option<mapper::channel::Mapper>,
     pub mapper_channel_game: Option<mapper::channel::Game>,
+    pub overworld_control_channel_overworld: Option<overworld_control::channel::Overworld>,
+    pub overworld_control_channel_control: Option<overworld_control::channel::Control>,
 }
 
 impl GameEventHub {
@@ -20,6 +22,8 @@ impl GameEventHub {
         game_channel: game::Channel,
         mapper_channel_mapper: mapper::channel::Mapper,
         mapper_channel_game: mapper::channel::Game,
+        overworld_control_overworld: overworld_control::channel::Overworld,
+        overworld_control_control: overworld_control::channel::Control,
     ) -> GameEventHub {
         GameEventHub {
             control_channel: Some(control_channel),
@@ -27,6 +31,8 @@ impl GameEventHub {
             game_channel: Some(game_channel),
             mapper_channel_mapper: Some(mapper_channel_mapper),
             mapper_channel_game: Some(mapper_channel_game),
+            overworld_control_channel_overworld: Some(overworld_control_overworld),
+            overworld_control_channel_control: Some(overworld_control_control),
         }
     }
 }
@@ -49,8 +55,10 @@ impl DevEventHub{
         let (send_from_render, recv_from_render) = channel();
         let (send_to_game, recv_to_game) = channel();
         let (send_from_game, recv_from_game) = channel();
-        let (send_to_mapper, recv_to_mapper) = channel();
-        let (send_from_mapper, recv_from_mapper) = channel();
+        let (send_mapper_from_game, recv_mapper_from_game) = channel();
+        let (send_mapper_to_game, recv_mapper_to_game) = channel();
+        let (send_overworld_control_from_control, recv_control_from_overworld_control) = channel();
+        let (send_overworld_control_to_control, recv_overworld_control_to_control) = channel();
 
         (
             DevEventHub::new_internal(
@@ -62,8 +70,10 @@ impl DevEventHub{
                 (send_from_control, recv_to_control),
                 (send_from_render, recv_to_render),
                 (send_from_game, recv_to_game),
-                (send_from_mapper, recv_to_mapper),
-                (send_to_mapper, recv_from_mapper)
+                (send_mapper_to_game, recv_mapper_from_game),
+                (send_mapper_from_game, recv_mapper_to_game),
+                (send_overworld_control_to_control, recv_control_from_overworld_control),
+                (send_overworld_control_from_control, recv_overworld_control_to_control)
             )
         )
     }

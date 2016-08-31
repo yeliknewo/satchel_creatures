@@ -4,8 +4,8 @@ use specs::{self, VecStorage};
 pub struct Component {
     tint: [f32; 4],
     layer: u8,
-    spritesheet_rect: [f32; 4],
-    spritesheet_size: [f32; 2],
+    spritesheet_rect: &'static [f32; 4],
+    spritesheet_size: &'static [f32; 2],
     mirror_x: bool,
     mirror_y: bool,
     dirty: bool,
@@ -17,7 +17,7 @@ impl specs::Component for Component {
 }
 
 impl Component {
-    pub fn new(layer: u8, tint: [f32; 4], spritesheet_rect: [f32; 4], spritesheet_size: [f32; 2]) -> Component {
+    pub fn new(layer: u8, tint: [f32; 4], spritesheet_rect: &'static [f32; 4], spritesheet_size: &'static [f32; 2]) -> Component {
         Component {
             tint: tint,
             layer: layer,
@@ -45,7 +45,7 @@ impl Component {
         self.set_dirty();
     }
 
-    pub fn set_spritesheet_rect(&mut self, spritesheet_rect: [f32; 4]) {
+    pub fn set_spritesheet_rect(&mut self, spritesheet_rect: &'static [f32; 4]) {
         self.spritesheet_rect = spritesheet_rect;
         self.set_dirty();
     }
