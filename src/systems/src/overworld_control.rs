@@ -69,15 +69,20 @@ impl specs::System<Delta> for System {
                         let rounded: Point2 = transform.get_pos().rounded();
                         {
                             let rounded_i: Point2I = rounded.clone().into();
-                            if &rounded_i == moving.get_location().get_slow() {
+                            if &rounded_i != moving.get_location().get_slow() {
+                                if (rounded.clone() - transform.get_pos().clone()).length() < 0.2 {
+                                    transform.set_pos(rounded);
+                                    moving.set_dir(dir);
+                                } else {
+                                    
+                                }
                                 *moving.get_mut_location().get_mut_slow() = rounded_i;
+                            } else {
+                                moving.set_dir(dir)
                             }
                         }
 
-                        if (rounded.clone() - transform.get_pos().clone()).length() < 0.2 {
-                            transform.set_pos(rounded);
-                            moving.set_dir(dir)
-                        }
+
                     },
                 },
                 Err(TryRecvError::Empty) => (),
