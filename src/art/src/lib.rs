@@ -34,6 +34,10 @@ pub mod layers {
     pub const PLAYER: u8 = 5;
 }
 
+pub mod error {
+    pub const ERROR: &'static [f32; 4] = &[0.0, 0.0, 1.0, 1.0];
+}
+
 pub mod tiles {
     pub const NAME: &'static str = "tiles.png";
     pub const SIZE: &'static [f32; 2] = &[256.0, 256.0];

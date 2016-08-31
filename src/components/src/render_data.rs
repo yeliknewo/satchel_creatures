@@ -35,6 +35,12 @@ impl Component {
         self.set_dirty();
     }
 
+    pub fn set_mirrors(&mut self, x: bool, y: bool) {
+        self.mirror_x = x;
+        self.mirror_y = y;
+        self.set_dirty();
+    }
+
     pub fn set_mirror_x(&mut self, mirror: bool) {
         self.mirror_x = mirror;
         self.set_dirty();
