@@ -89,13 +89,17 @@ impl specs::System<Delta> for System {
                         };
 
                         if let Some(target_entity) = target_entity_opt {
-                            if let Some(target) = tiles.get(*target_entity) {
-                                let offset_from_target = target.get_location().sub_ref(transform.get_pos());
+                            if let Some(target) = on_tiles.get(*target_entity) {
+                                let offset_from_target = target.get_link().get_slow().sub_ref(&transform.get_pos().into());
+                                let offset_from_target_length = offset_from_target.length();
 
-                                if offset_from_target.length() < speed * delta_time {
-                                    moving.walk_to(target);
+                                if offset_from_target_length < 0.1 {
+                                    moving.idle();
+                                } else if offset_from_target_length < 1.0 * delta_time {
+                                    moving.walk_to(dir, offset_from_target);
+                                } else {
+                                    moving.walk(dir, offset_from_target);
                                 }
-
                             }
                         }
                     }

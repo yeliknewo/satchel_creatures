@@ -29,6 +29,15 @@ impl Component {
         }
     }
 
+    pub fn set_rect_vec(&mut self, state: State, rect: Vec<&'static [f32; 4]>) {
+        self.state_rects_map.insert(state, rect);
+    }
+
+    pub fn with_state_rect(mut self, state: State, rect: Vec<&'static [f32; 4]>) -> Self {
+        self.set_rect_vec(state, rect);
+        self
+    }
+
     fn set_future_state_pair(&mut self, state_pair: (State, StateData)) {
         self.future_state_pairs.push(state_pair);
     }

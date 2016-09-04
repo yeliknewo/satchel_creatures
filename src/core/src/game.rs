@@ -12,9 +12,9 @@ use time::{precise_time_ns};
 
 //*************************************************************************************************
 
-use comps::{Tile, RenderId, Transform, Camera, RenderData, Clickable, Moving, OverworldPlayer};
+use comps::{Tile, RenderId, Transform, Camera, RenderData, Clickable, Moving, OverworldPlayer, OnTile};
 use comps::non_components::{Map, Link};
-use comps::moving::Dir;
+use comps::moving::{State, Dir};
 
 use sys::{Render, Control, Mapper, LinkConnector, OverworldControl, Mover, CameraMover, mapper};
 
@@ -74,6 +74,7 @@ impl Game {
             w.register::<Tile>();
             w.register::<Moving>();
             w.register::<OverworldPlayer>();
+            w.register::<OnTile>();
 
             w.add_resource(Map::new());
 
@@ -184,6 +185,7 @@ impl Game {
                     ))
                     .with(RenderData::new(layers::TILES, *tiles::DEFAULT_TINT, tile_rect, tiles::SIZE))
                     .with(Tile::new(vec!()))
+                    .with(OnTile::new(Link::new(location.clone())))
                     .build();
                 game_event_hub.mapper_channel_game.as_mut().unwrap().0.send(mapper::RecvEvent::NewMapping(location, entity)).unwrap();
             }
@@ -215,14 +217,15 @@ impl Game {
                 nalgebra::Vector3::new(1.0, 1.0, 1.0)
             ))
             .with(RenderData::new(layers::PLAYER, *player::DEFAULT_TINT, player::STAND_DOWN, player::SIZE))
-            .with(Moving::new(Dir::Stay, Link::new(Point2I::new(0, 0)))
-                .with_map_rect(Dir::Stay, player::STAND_DOWN)
-                .with_map_rect(Dir::Left, player::STAND_SIDE)
-                .with_map_rect(Dir::Right, player::STAND_SIDE)
-                .with_map_rect(Dir::Up, player::STAND_UP)
-                .with_map_rect(Dir::Down, player::STAND_DOWN)
+            .with(Moving::new()
+                .with_state_rect(State::Idle, vec!(&player::STAND_DOWN))
+                .with_state_rect(State::Walking(Dir::Left), vec!(&player::STAND_SIDE))
+                .with_state_rect(State::Walking(Dir::Right), vec!(&player::STAND_SIDE))
+                .with_state_rect(State::Walking(Dir::Down), vec!(&player::STAND_DOWN))
+                .with_state_rect(State::Walking(Dir::Up), vec!(&player::STAND_UP))
             )
             .with(OverworldPlayer::new())
+            .with(OnTile::new(Link::new(Point2I::new(0, 0))))
             .build();
 
         //add control system for human IO

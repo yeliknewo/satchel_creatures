@@ -121,6 +121,10 @@ impl Point2I {
     pub fn sub_ref(&self, other: &Point2I) -> Point2I {
         Point2I::new(self.get_x() - other.get_x(), self.get_y() - other.get_y())
     }
+
+    pub fn length(&self) -> Coord {
+        ((self.get_x().pow(2) + self.get_y().pow(2)) as Coord).sqrt()
+    }
 }
 
 impl Add<Point2I> for Point2I {
