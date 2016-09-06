@@ -10,7 +10,7 @@ use math::{Point2, Point2I};
 
 use comps::{Transform, OverworldPlayer, Moving, OnTile, Tile};
 use comps::non_components::Map;
-use comps::moving::Dir;
+use comps::moving::{Dir, State, StateData};
 
 //*************************************************************************************************
 
@@ -90,15 +90,15 @@ impl specs::System<Delta> for System {
 
                         if let Some(target_entity) = target_entity_opt {
                             if let Some(target) = on_tiles.get(*target_entity) {
-                                let offset_from_target = target.get_link().get_slow().sub_ref(&transform.get_pos().into());
-                                let offset_from_target_length = offset_from_target.length();
-
-                                if offset_from_target_length < 0.1 {
+                                let percent = match &moving.get_last_state_pair().1 {
+                                    &StateData::WalkTo(_, _, ref percent) => *percent,
+                                    _ => 0.0,
+                                };
+                                if percent >= 1.0 {
+                                    moving.move_to(dir, target.get_link().get_slow().clone());
                                     moving.idle();
-                                } else if offset_from_target_length < 1.0 * delta_time {
-                                    moving.walk_to(dir, offset_from_target);
                                 } else {
-                                    moving.walk(dir, offset_from_target);
+                                    moving.walk_to(dir, on_tile.get_link().get_slow().clone(), target.get_link().get_slow().clone(), percent + delta_time);
                                 }
                             }
                         }

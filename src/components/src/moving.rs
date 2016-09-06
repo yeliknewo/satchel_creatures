@@ -8,6 +8,8 @@ use art::error;
 
 use math::{Point2I};
 
+use utils::Coord;
+
 //*************************************************************************************************
 
 pub struct Component {
@@ -72,12 +74,12 @@ impl Component {
         self.set_future_state_pair((State::Idle, StateData::Idle));
     }
 
-    pub fn walk(&mut self, dir: Dir, target: Point2I) {
-        self.set_future_state_pair((State::Walking(dir), StateData::Walking(target)));
+    pub fn walk_to(&mut self, dir: Dir, start: Point2I, end: Point2I, percent: Coord) {
+        self.set_future_state_pair((State::Walking(dir), StateData::WalkTo(start, end, percent)));
     }
 
-    pub fn walk_to(&mut self, dir: Dir, target: Point2I) {
-        self.set_future_state_pair((State::Walking(dir), StateData::MoveTo(target)));
+    pub fn move_to(&mut self, dir: Dir, end: Point2I) {
+        self.set_future_state_pair((State::Walking(dir), StateData::MoveTo(end)));
     }
 
     pub fn get_next_rect(&self) -> &'static [f32; 4] {
@@ -110,6 +112,10 @@ impl Component {
     pub fn is_state_new(&self) -> bool {
         self.state_pair.0 == self.last_state_pair.0
     }
+
+    pub fn get_last_state_pair(&self) -> &(State, StateData) {
+        &self.last_state_pair
+    }
 }
 
 impl specs::Component for Component {
@@ -122,10 +128,10 @@ pub enum State {
     Walking(Dir),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum StateData {
     Idle,
-    Walking(Point2I),
+    WalkTo(Point2I, Point2I, Coord),
     MoveTo(Point2I),
 }
 

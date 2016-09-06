@@ -3,7 +3,7 @@ use specs::{self, RunArg};
 //*************************************************************************************************
 
 use comps::moving::{Dir, State, StateData};
-use comps::{Moving, Transform, RenderData};
+use comps::{OnTile, Moving, Transform, RenderData};
 
 use utils::{Delta};
 
@@ -28,22 +28,23 @@ impl specs::System<Delta> for System {
     fn run(&mut self, arg: RunArg, delta_time: Delta) {
         use specs::Join;
 
-        let (mut movings, mut transforms, mut render_datas) = arg.fetch(|w|
+        let (mut on_tiles, mut movings, mut transforms, mut render_datas) = arg.fetch(|w|
             (
+                w.write::<OnTile>(),
                 w.write::<Moving>(),
                 w.write::<Transform>(),
                 w.write::<RenderData>()
             )
         );
 
-        for (mut moving, mut transform, mut render_data) in (&mut movings, &mut transforms, &mut render_datas).iter() {
+        for (mut on_tile, mut moving, mut transform, mut render_data) in (&mut on_tiles, &mut movings, &mut transforms, &mut render_datas).iter() {
             match moving.get_state_pair() {
                 &(State::Idle, StateData::Idle) => {
                     if moving.is_state_new() {
                         render_data.set_spritesheet_rect(moving.get_next_rect());
                     }
                 },
-                &(State::Walking(ref dir), StateData::Walking(ref target)) => {
+                &(State::Walking(ref dir), StateData::WalkTo(ref start, ref end, ref percent)) => {
                     if moving.is_state_new() {
                         match dir {
                             &Dir::Left => render_data.set_mirrors(true, false),
@@ -53,12 +54,9 @@ impl specs::System<Delta> for System {
                             &Dir::Stay => render_data.set_mirrors(false, false),
                         }
                     }
-                    {
-                        let target_f: Point2 = target.clone().into();
-                        transform.add_pos(target_f * delta_time);
-                    }
+                    transform.set_pos(Point2::from(start.clone()).interpolate(&Point2::from(end.clone()), *percent));
                 },
-                &(State::Walking(ref dir), StateData::MoveTo(ref target)) => {
+                &(State::Walking(ref dir), StateData::MoveTo(ref end)) => {
                     if moving.is_state_new() {
                         match dir {
                             &Dir::Left => render_data.set_mirrors(true, false),
@@ -68,12 +66,13 @@ impl specs::System<Delta> for System {
                             &Dir::Stay => render_data.set_mirrors(false, false),
                         }
                     }
-                    transform.set_pos(target.clone().into());
-                },
+                    *on_tile.get_mut_link().get_mut_slow() = end.clone();
+                    transform.set_pos(Point2::from(end.clone()));
+                }
                 ref state_pair => {
                     error!("invalid state pair: {:?}", state_pair);
                 },
-            }
+            };
             moving.update_state();
             if moving.get_rects_len() > 1 {
                 render_data.set_spritesheet_rect(moving.get_next_rect());
