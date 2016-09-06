@@ -68,37 +68,46 @@ impl specs::System<Delta> for System {
 
         for (_, on_tile, mut transform, mut moving) in (&overworld_players, &on_tiles, &mut transforms, &mut movings).iter() {
             match self.channel.1.try_recv() {
-                Ok(event) => match event {
-                    RecvEvent::Move(dir) => {
-                        let (dir, target_entity_opt) = match dir {
-                            Dir::Left => {
-                                (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(-1, 0))))
-                            },
-                            Dir::Right => {
-                                (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(1, 0))))
-                            },
-                            Dir::Up => {
-                                (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(0, 1))))
-                            },
-                            Dir::Down => {
-                                (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(0, -1))))
-                            },
-                            Dir::Stay => {
-                                (dir, None)
-                            },
-                        };
+                Ok(event) => {
+                    match moving.get_state_pair() {
+                        &(_, StateData::WalkTo(_, _, _)) |
+                        &(_, StateData::MoveTo(_)) => {
+                            continue;
+                        }
+                        _ => (),
+                    }
+                    match event {
+                        RecvEvent::Move(dir) => {
+                            let (dir, target_entity_opt) = match dir {
+                                Dir::Left => {
+                                    (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(-1, 0))))
+                                },
+                                Dir::Right => {
+                                    (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(1, 0))))
+                                },
+                                Dir::Up => {
+                                    (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(0, 1))))
+                                },
+                                Dir::Down => {
+                                    (dir, map.get_map().get(&on_tile.get_link().get_slow().add_ref(&Point2I::new(0, -1))))
+                                },
+                                Dir::Stay => {
+                                    (dir, None)
+                                },
+                            };
 
-                        if let Some(target_entity) = target_entity_opt {
-                            if let Some(target) = on_tiles.get(*target_entity) {
-                                let percent = match &moving.get_last_state_pair().1 {
-                                    &StateData::WalkTo(_, _, ref percent) => *percent,
-                                    _ => 0.0,
-                                };
-                                if percent >= 1.0 {
-                                    moving.move_to(dir, target.get_link().get_slow().clone());
-                                    moving.idle();
-                                } else {
-                                    moving.walk_to(dir, on_tile.get_link().get_slow().clone(), target.get_link().get_slow().clone(), percent + delta_time);
+                            if let Some(target_entity) = target_entity_opt {
+                                if let Some(target) = on_tiles.get(*target_entity) {
+                                    let percent = match &moving.get_last_state_pair().1 {
+                                        &StateData::WalkTo(_, _, ref percent) => *percent,
+                                        _ => 0.0,
+                                    };
+                                    if percent >= 1.0 {
+                                        moving.move_to(dir, target.get_link().get_slow().clone());
+                                        moving.idle();
+                                    } else {
+                                        moving.walk_to(dir, on_tile.get_link().get_slow().clone(), target.get_link().get_slow().clone(), percent + delta_time);
+                                    }
                                 }
                             }
                         }
